@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>매일 문해력 쑥쑥</title>
+  <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+  
+  <style>
+    /* 기존 스타일 그대로 유지 */
+    :root { --primary: #4CAF50; --bg: #E8F5E9; --wrong: #FFEBEE; --correct: #E8F5E9; }
+    body { font-family: 'Noto Sans KR', sans-serif; background-color: var(--bg); margin: 0; padding: 20px; color: #333; }
+    .container { max-width: 600px; margin: 0 auto; padding-bottom: 50px; }
+    h1 { font-family: 'Jua', sans-serif; text-align: center; color: #2E7D32; font-size: 2em; margin-bottom: 5px; }
+    .sub-title { text-align: center; color: #666; font-size: 0.9em; margin-bottom: 20px; }
+    .card { background: white; border-radius: 16px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 25px; }
+    .category-badge { display: inline-block; background: #FF9800; color: white; padding: 4px 12px; border-radius: 20px; font-weight: bold; font-size: 0.8em; margin-bottom: 10px; }
+    h2 { margin-top: 0; font-size: 1.4em; color: #111; }
+    .content-body { font-size: 1.1em; line-height: 1.7; text-align: justify; word-break: keep-all; }
+    .content-body p { margin-bottom: 15px; }
+    .quiz-header { font-family: 'Jua', sans-serif; font-size: 1.3em; color: #1565C0; margin-bottom: 15px; border-bottom: 2px solid #E3F2FD; padding-bottom: 10px; }
+    .choice-container { display: flex; flex-direction: column; gap: 10px; margin-top: 15px; }
+    .choice-btn { background: white; border: 2px solid #ddd; padding: 12px 15px; border-radius: 10px; text-align: left; font-size: 1em; cursor: pointer; transition: all 0.2s; color: #444; }
+    .choice-btn:hover { background: #f9f9f9; border-color: #bbb; }
+    .choice-btn.selected { border-color: var(--primary); background-color: #E8F5E9; color: #2E7D32; font-weight: bold; }
+    #sortable-list { list-style: none; padding: 0; margin: 0; }
+    .sort-item { background: #FAFAFA; border: 1px solid #eee; padding: 15px; margin-bottom: 8px; border-radius: 8px; cursor: grab; display: flex; align-items: center; font-size: 0.95em; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
+    .sort-item:before { content: '☰'; margin-right: 10px; color: #bbb; }
+    .check-btn { width: 100%; background: var(--primary); color: white; border: none; padding: 14px; border-radius: 10px; font-size: 1.1em; font-weight: bold; cursor: pointer; margin-top: 15px; }
+    .result-box { margin-top: 15px; padding: 15px; border-radius: 10px; text-align: center; display: none; font-weight: bold; }
+    .result-box.correct { background: var(--correct); color: #2E7D32; border: 1px solid #C8E6C9; }
+    .result-box.wrong { background: var(--wrong); color: #C62828; border: 1px solid #FFCDD2; }
+    #loading { text-align: center; padding: 50px; font-size: 1.2em; color: #666; }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <h1>🌱 오늘의 문해력</h1>
+    <div class="sub-title">하루 한 편, 똑똑해지는 습관</div>
+
+    <div id="loading">오늘의 글을 가져오고 있어요... 🚚</div>
+
+    <div id="app" style="display:none;">
+      
+      <!-- 1. 본문 카드 -->
+      <div class="card">
+        <span id="category" class="category-badge">카테고리</span>
+        <h2 id="title">제목</h2>
+        <div id="content" class="content-body"></div>
+      </div>
+
+      <!-- 2. Q1: 4지선다 카드 -->
+      <div class="card">
+        <div class="quiz-header">Q1. 내용을 확인해요</div>
+        <p id="q1-text" style="font-size:1.1em; font-weight:bold;">문제</p>
+        
+        <div id="q1-options" class="choice-container"></div>
+        
+        <button class="check-btn" onclick="checkQ1()">정답 확인</button>
+        <div id="q1-result" class="result-box"></div>
+      </div>
+
+      <!-- 3. Q2: 순서 맞추기 카드 -->
+      <div class="card">
+        <div class="quiz-header">Q2. 순서를 맞춰봐요</div>
+        <p style="color:#666; font-size:0.9em; margin-bottom:15px;">
+          글의 흐름에 맞게 카드를 드래그해서 순서를 섞어보세요.
+        </p>
+        
+        <ul id="sortable-list"></ul>
+        
+        <button class="check-btn" onclick="checkQ2()">순서 확인</button>
+        <div id="q2-result" class="result-box"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    // ============================================================
+    // 👇 아래 URL을 앱스크립트 배포 후 받은 URL로 교체하세요!
+    // ============================================================
+    const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzr2RZqmVQqRi3Ms-zU1goBn71YCVUOyyAiNHCbpo-6RAG2RlPEOB7pKSDvgIMDTpyIrw/exec";
+
+    let serverData = {};
+    let q1UserChoice = null;
+
+    window.onload = function() {
+      fetchContent();
+    };
+
+    // google.script.run 대신 fetch 사용
+    function fetchContent() {
+      fetch(GAS_WEB_APP_URL)
+        .then(response => response.json())
+        .then(data => {
+          initApp(data);
+        })
+        .catch(error => {
+          console.error('Error:', error);
+          document.getElementById('loading').innerHTML = "데이터를 불러오는데 실패했습니다. <br> 잠시 후 다시 시도해주세요.";
+        });
+    }
+
+    function initApp(data) {
+      document.getElementById('loading').style.display = 'none';
+      
+      if (!data || data.status !== 'success') {
+        document.getElementById('app').innerHTML = `
+          <div class="card" style="text-align:center">
+            <h3>💤 아직 오늘의 글이 없어요.</h3>
+            <p>관리자가 생성할 때까지 기다려주세요!</p>
+          </div>`;
+        document.getElementById('app').style.display = 'block';
+        return;
+      }
+
+      serverData = data;
+      document.getElementById('app').style.display = 'block';
+      
+      // 본문 표시
+      document.getElementById('category').innerText = data.category;
+      document.getElementById('title').innerText = data.title;
+      document.getElementById('content').innerHTML = data.content;
+      
+      // Q1 표시
+      document.getElementById('q1-text').innerText = data.q1.question;
+      const q1Container = document.getElementById('q1-options');
+      q1Container.innerHTML = '';
+      
+      const options = data.q1.options || [];
+      options.forEach((optText, index) => {
+        const btn = document.createElement('button');
+        btn.className = 'choice-btn';
+        btn.innerText = (index + 1) + ". " + optText;
+        btn.onclick = function() { selectOption(index + 1, btn); };
+        q1Container.appendChild(btn);
+      });
+
+      // Q2 표시
+      const list = document.getElementById('sortable-list');
+      let items = data.q2.items.map((txt, idx) => ({ text: txt, originalIdx: idx }));
+      
+      for (let i = items.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [items[i], items[j]] = [items[j], items[i]];
+      }
+
+      items.forEach(item => {
+        const li = document.createElement('li');
+        li.className = 'sort-item';
+        li.innerText = item.text;
+        li.dataset.idx = item.originalIdx; 
+        list.appendChild(li);
+      });
+
+      new Sortable(list, { animation: 150 });
+    }
+
+    // Q1 로직
+    function selectOption(num, btnElement) {
+      q1UserChoice = num;
+      const btns = document.querySelectorAll('.choice-btn');
+      btns.forEach(b => b.classList.remove('selected'));
+      btnElement.classList.add('selected');
+    }
+
+    function checkQ1() {
+      const resultBox = document.getElementById('q1-result');
+      resultBox.style.display = 'block';
+      
+      if (!q1UserChoice) {
+        resultBox.className = 'result-box wrong';
+        resultBox.innerText = '보기를 선택해주세요!';
+        return;
+      }
+
+      if (parseInt(q1UserChoice) === parseInt(serverData.q1.answer)) {
+        resultBox.className = 'result-box correct';
+        resultBox.innerHTML = '정답입니다! 💯<br><br><span style="font-weight:normal; font-size:0.9em">' + serverData.q1.explanation + '</span>';
+      } else {
+        resultBox.className = 'result-box wrong';
+        resultBox.innerText = '틀렸습니다. 다시 한번 읽어보세요!';
+      }
+    }
+
+    // Q2 로직
+    function checkQ2() {
+      const els = document.querySelectorAll('#sortable-list .sort-item');
+      let isCorrect = true;
+      
+      els.forEach((el, index) => {
+        if (parseInt(el.dataset.idx) !== index) isCorrect = false;
+      });
+
+      const resultBox = document.getElementById('q2-result');
+      resultBox.style.display = 'block';
+
+      if (isCorrect) {
+        resultBox.className = 'result-box correct';
+        resultBox.innerText = '완벽해요! 글의 흐름을 잘 파악했네요! 🎉';
+      } else {
+        resultBox.className = 'result-box wrong';
+        resultBox.innerText = '순서가 조금 다른 것 같아요. 다시 정리해볼까요?';
+      }
+    }
+  </script>
+</body>
+</html>
