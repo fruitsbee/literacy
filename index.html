@@ -146,7 +146,7 @@
       color: var(--accent-hover); font-weight: 700;
     }
 
-    /* =========================================
+   /* =========================================
        ⚡️ [핵심] 드래그 앤 드롭 최적화 CSS
        ========================================= */
     #sortable-list { list-style: none; padding: 0; margin: 0; position: relative; }
@@ -164,10 +164,11 @@
       color: #444;
       box-shadow: 0 2px 4px rgba(0,0,0,0.03);
       
-      /* 드래그 반응 속도 최적화 (위치 변형 애니메이션 제거) */
+      /* ✅ [수정 1] transform 애니메이션 제거 (반응 속도 개선) */
+      /* 오직 그림자만 부드럽게 변하도록 설정 */
       transition: box-shadow 0.15s ease;
 
-      /* 모바일 스크롤 간섭 완전 차단 */
+      /* ✅ [수정 2] 모바일 스크롤 간섭 완전 차단 */
       touch-action: none;
       -webkit-touch-callout: none;
       user-select: none;
@@ -182,20 +183,24 @@
 
     /* 드래그 중인 아이템 (떠다니는 녀석) */
     .sortable-fallback {
+      /* ✅ [수정 3] 손가락 위치와 완벽 일치를 위해 강제 설정 */
       opacity: 1 !important;
       background: #fff;
       border: 2px solid var(--accent);
-      box-shadow: 0 15px 30px rgba(0,0,0,0.2);
+      box-shadow: 0 10px 20px rgba(0,0,0,0.15); /* 그림자 깔끔하게 */
       z-index: 99999;
       cursor: grabbing;
 
-      /* 중요: 마우스/손가락 위치와 아이템 위치 완벽 동기화 */
-      transform: none !important; 
-      pointer-events: none; /* 클릭 통과 */
+      /* ✅ [수정 4] 크기/회전 변형 제거하여 좌표 오차 방지 */
+      /* scale / rotate 없음 */
+      
+      /* ✅ [수정 5] 이벤트 통과 (필수) */
+      pointer-events: none;
     }
 
-    /* 드래그 중 딜레이 제거 */
-    .sortable-fallback, .sortable-drag {
+    /* ✅ [수정 6] 드래그 중인 요소는 어떠한 딜레이(transition)도 없어야 함 */
+    .sortable-fallback,
+    .sortable-drag {
       transition: none !important;
     }
 
