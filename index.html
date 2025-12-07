@@ -3,15 +3,14 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>매일 문해력 쑥쑥 - 최적화 버전</title>
+  <title>매일 문해력 쑥쑥</title>
   
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Gowun+Dodum&family=Pretendard:wght@400;600;700&display=swap" rel="stylesheet">
   
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-
+  
   <style>
     /* =========================================
        1. 기본 설정
@@ -42,7 +41,7 @@
     }
 
     /* =========================================
-       2. 레이아웃
+       2. 레이아웃 & 카드 스타일
        ========================================= */
     .container {
       max-width: 680px;
@@ -87,6 +86,7 @@
       margin-bottom: 16px;
     }
 
+    /* 본문 텍스트 스타일 */
     #title {
       font-family: 'Gowun Dodum', sans-serif;
       font-size: 1.6rem;
@@ -103,8 +103,14 @@
       text-align: justify;
       word-break: keep-all;
     }
-    .content-body p { margin-bottom: 20px; }
+    /* 중요: 파싱된 strong 태그 스타일 */
+    .content-body strong, .result-box strong {
+      color: var(--accent-hover);
+      background: rgba(93, 125, 98, 0.1); /* 형광펜 효과 살짝 */
+      padding: 0 2px;
+    }
 
+    /* 퀴즈 UI */
     .quiz-header {
       font-family: 'Gowun Dodum', sans-serif;
       font-size: 1.2rem;
@@ -158,11 +164,10 @@
       color: #444;
       box-shadow: 0 2px 4px rgba(0,0,0,0.03);
       
-      /* ✅ [수정 1] transform 애니메이션 제거 (반응 속도 개선) */
-      /* 오직 그림자만 부드럽게 변하도록 설정 */
+      /* 드래그 반응 속도 최적화 (위치 변형 애니메이션 제거) */
       transition: box-shadow 0.15s ease;
 
-      /* ✅ [수정 2] 모바일 스크롤 간섭 완전 차단 */
+      /* 모바일 스크롤 간섭 완전 차단 */
       touch-action: none;
       -webkit-touch-callout: none;
       user-select: none;
@@ -177,24 +182,20 @@
 
     /* 드래그 중인 아이템 (떠다니는 녀석) */
     .sortable-fallback {
-      /* ✅ [수정 3] 손가락 위치와 완벽 일치를 위해 강제 설정 */
       opacity: 1 !important;
       background: #fff;
       border: 2px solid var(--accent);
-      box-shadow: 0 10px 20px rgba(0,0,0,0.15); /* 그림자 깔끔하게 */
+      box-shadow: 0 15px 30px rgba(0,0,0,0.2);
       z-index: 99999;
       cursor: grabbing;
 
-      /* ✅ [수정 4] 크기/회전 변형 제거하여 좌표 오차 방지 */
-      /* scale / rotate 없음 */
-      
-      /* ✅ [수정 5] 이벤트 통과 (필수) */
-      pointer-events: none;
+      /* 중요: 마우스/손가락 위치와 아이템 위치 완벽 동기화 */
+      transform: none !important; 
+      pointer-events: none; /* 클릭 통과 */
     }
 
-    /* ✅ [수정 6] 드래그 중인 요소는 어떠한 딜레이(transition)도 없어야 함 */
-    .sortable-fallback,
-    .sortable-drag {
+    /* 드래그 중 딜레이 제거 */
+    .sortable-fallback, .sortable-drag {
       transition: none !important;
     }
 
@@ -285,6 +286,7 @@
   </div>
 
   <script>
+    // 👇 배포된 GAS 웹앱 URL을 입력하세요
     const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzr2RZqmVQqRi3Ms-zU1goBn71YCVUOyyAiNHCbpo-6RAG2RlPEOB7pKSDvgIMDTpyIrw/exec";
 
     let serverData = {};
@@ -297,6 +299,7 @@
         .then(res => res.json())
         .then(data => initApp(data))
         .catch(err => {
+          console.error(err);
           document.getElementById('loading').innerHTML = "<p>데이터 로딩 실패 😢<br>새로고침 해주세요.</p>";
         });
     }
@@ -316,10 +319,11 @@
       serverData = data;
       document.getElementById('app').style.display = 'block';
       
+      // ✅ [중요] safeParse() 함수를 통해 데이터를 안전하게 가공합니다.
       document.getElementById('category').innerText = data.category;
-      document.getElementById('title').innerText = data.title;
-      document.getElementById('content').innerHTML = marked.parse(data.content);
-      document.getElementById('q1-text').innerText = data.q1.question;
+      document.getElementById('title').innerHTML = safeParse(data.title);
+      document.getElementById('content').innerHTML = safeParse(data.content);
+      document.getElementById('q1-text').innerHTML = safeParse(data.q1.question);
       
       // Q1 렌더링
       const q1Container = document.getElementById('q1-options');
@@ -327,15 +331,16 @@
       (data.q1.options || []).forEach((opt, idx) => {
         const btn = document.createElement('div');
         btn.className = 'choice-btn';
-        btn.innerHTML = `<span>${idx + 1}.</span> ${opt}`;
+        // 보기에도 혹시 몰라 파싱 적용
+        btn.innerHTML = `<span>${idx + 1}.</span> ${safeParse(opt)}`;
         btn.onclick = () => selectOption(idx + 1, btn);
         q1Container.appendChild(btn);
       });
 
       // Q2 렌더링
       const list = document.getElementById('sortable-list');
+      // 문단 순서 섞기
       let items = data.q2.items.map((txt, i) => ({ text: txt, originalIdx: i }));
-      // 셔플
       for (let i = items.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [items[i], items[j]] = [items[j], items[i]];
@@ -344,23 +349,19 @@
       items.forEach(item => {
         const li = document.createElement('li');
         li.className = 'sort-item';
-        li.innerText = item.text;
+        // 문단 카드 안의 텍스트도 파싱 적용
+        li.innerHTML = safeParse(item.text); 
         li.dataset.idx = item.originalIdx;
         list.appendChild(li);
       });
 
-      // 🔥 [핵심] Sortable 옵션 튜닝 (반응성 최우선)
+      // 🔥 [드래그 설정] 손가락에 착 붙는 최적값
       new Sortable(list, {
-        // 1. 애니메이션 속도: 다른 아이템들이 비켜주는 속도 (너무 느리면 답답함)
         animation: 150,
-
-        // 2. 모바일 터치 딜레이 최적화 (80ms 정도가 실수 방지와 반응성 사이의 균형)
-        delay: 80,
+        delay: 80, 
         delayOnTouchOnly: true,
-        
-        // 3. 민감도: 살짝만 움직여도 드래그 시작
         touchStartThreshold: 3, 
-        fallbackTolerance: 2, 
+        fallbackTolerance: 3,
 
         forceFallback: true,    
         fallbackClass: "sortable-fallback",
@@ -368,6 +369,31 @@
         dragClass: "sortable-drag",
         fallbackOnBody: true 
       });
+    }
+
+    // ✅ [핵심 기능] 텍스트 파싱 함수
+    // 1. GAS에서 넘어온 Escape된 문자(&#42; 등)를 먼저 되돌립니다.
+    // 2. 그 후 **문자**를 <strong>문자</strong>로 바꿉니다.
+    // 3. 줄바꿈(\n)을 <br>로 바꿉니다.
+    function safeParse(text) {
+      if (!text) return "";
+      let temp = String(text); // 문자열로 확실하게 변환
+
+      // 1단계: HTML Unescape (혹시 모를 이중 인코딩 방지)
+      // &#42; 또는 &ast; 는 * 입니다.
+      temp = temp.replace(/&#42;/g, '*').replace(/&ast;/g, '*');
+      temp = temp.replace(/&#95;/g, '_').replace(/&lowbar;/g, '_');
+      temp = temp.replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+      temp = temp.replace(/&amp;/g, '&'); // &는 맨 마지막에
+
+      // 2단계: Markdown Bold 처리 (** 텍스트 **)
+      // 탐욕적이지 않게(.*?) 처리하여 여러 개가 있어도 각각 적용
+      temp = temp.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+
+      // 3단계: 줄바꿈 처리 (\n -> <br>)
+      temp = temp.replace(/\n/g, '<br>');
+
+      return temp;
     }
 
     // Q1 로직
@@ -385,7 +411,10 @@
       }
       if (parseInt(q1UserChoice) === parseInt(serverData.q1.answer)) {
         res.className = 'result-box correct'; 
-        res.innerHTML = '👏 정답입니다!<br><br><div style="font-weight:normal; font-size:0.9em; color:#444;">' + serverData.q1.explanation + '</div>';
+        // 해설 부분도 파싱 적용
+        res.innerHTML = '👏 정답입니다!<br><br><div style="font-weight:normal; font-size:0.9em; color:#444;">' + 
+                        safeParse(serverData.q1.explanation) + 
+                        '</div>';
       } else {
         res.className = 'result-box wrong'; res.innerText = '다시 한 번 생각해볼까요? 🤔';
       }
