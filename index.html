@@ -1,77 +1,324 @@
 <!DOCTYPE html>
-<html>
+<html lang="ko">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>매일 문해력 쑥쑥</title>
-  <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
+  
+  <!-- 폰트: 제목용(Gowun Dodum), 본문용(Gowun Batang - 명조체 느낌) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Gowun+Dodum&family=Pretendard:wght@400;600;700&display=swap" rel="stylesheet">
+  
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
   
   <style>
-    /* 기존 스타일 그대로 유지 */
-    :root { --primary: #4CAF50; --bg: #E8F5E9; --wrong: #FFEBEE; --correct: #E8F5E9; }
-    body { font-family: 'Noto Sans KR', sans-serif; background-color: var(--bg); margin: 0; padding: 20px; color: #333; }
-    .container { max-width: 600px; margin: 0 auto; padding-bottom: 50px; }
-    h1 { font-family: 'Jua', sans-serif; text-align: center; color: #2E7D32; font-size: 2em; margin-bottom: 5px; }
-    .sub-title { text-align: center; color: #666; font-size: 0.9em; margin-bottom: 20px; }
-    .card { background: white; border-radius: 16px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 25px; }
-    .category-badge { display: inline-block; background: #FF9800; color: white; padding: 4px 12px; border-radius: 20px; font-weight: bold; font-size: 0.8em; margin-bottom: 10px; }
-    h2 { margin-top: 0; font-size: 1.4em; color: #111; }
-    .content-body { font-size: 1.1em; line-height: 1.7; text-align: justify; word-break: keep-all; }
-    .content-body p { margin-bottom: 15px; }
-    .quiz-header { font-family: 'Jua', sans-serif; font-size: 1.3em; color: #1565C0; margin-bottom: 15px; border-bottom: 2px solid #E3F2FD; padding-bottom: 10px; }
-    .choice-container { display: flex; flex-direction: column; gap: 10px; margin-top: 15px; }
-    .choice-btn { background: white; border: 2px solid #ddd; padding: 12px 15px; border-radius: 10px; text-align: left; font-size: 1em; cursor: pointer; transition: all 0.2s; color: #444; }
-    .choice-btn:hover { background: #f9f9f9; border-color: #bbb; }
-    .choice-btn.selected { border-color: var(--primary); background-color: #E8F5E9; color: #2E7D32; font-weight: bold; }
+    /* =========================================
+       1. 기본 설정 (Reset & Variables)
+       ========================================= */
+    :root {
+      --bg-paper: #F9F7F1;       /* 종이 질감 배경색 */
+      --card-bg: #FFFFFF;        /* 카드 배경 */
+      --text-main: #2C2C2C;      /* 진한 회색 (눈 편안함) */
+      --text-sub: #6D6D6D;       /* 연한 회색 */
+      --accent: #5D7D62;         /* 차분한 세이지 그린 */
+      --accent-light: #E8EFE9;   /* 연한 그린 배경 */
+      --accent-hover: #4A634E;   /* 호버 색상 */
+      --error: #D32F2F;          /* 오답 색상 */
+      --shadow: 0 8px 24px rgba(0,0,0,0.06); /* 부드러운 그림자 */
+      --radius: 16px;            /* 둥근 모서리 */
+    }
+
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    
+    body {
+      font-family: 'Pretendard', sans-serif; /* 기본 UI 폰트 */
+      background-color: var(--bg-paper);
+      margin: 0;
+      padding: 0;
+      color: var(--text-main);
+      line-height: 1.6;
+    }
+
+    /* =========================================
+       2. 레이아웃 (Layout)
+       ========================================= */
+    .container {
+      max-width: 680px; /* 태블릿 대응 너비 */
+      margin: 0 auto;
+      padding: 40px 20px 80px;
+    }
+
+    /* 모바일 대응 */
+    @media (max-width: 480px) {
+      .container { padding: 20px 16px 60px; }
+    }
+
+    /* =========================================
+       3. 헤더 (Header)
+       ========================================= */
+    header { text-align: center; margin-bottom: 30px; }
+    
+    h1 {
+      font-family: 'Gowun Dodum', sans-serif;
+      color: var(--accent);
+      font-size: 1.8rem;
+      margin: 0 0 8px 0;
+      letter-spacing: -0.5px;
+    }
+
+    .sub-title {
+      color: var(--text-sub);
+      font-size: 0.95rem;
+      font-weight: 400;
+    }
+
+    /* =========================================
+       4. 카드 디자인 (Paper Style)
+       ========================================= */
+    .card {
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      padding: 30px;
+      margin-bottom: 24px;
+      box-shadow: var(--shadow);
+      border: 1px solid rgba(0,0,0,0.02);
+      transition: transform 0.2s ease;
+    }
+
+    @media (max-width: 480px) {
+      .card { padding: 24px 20px; border-radius: 20px; }
+    }
+
+    /* 뱃지 */
+    .category-badge {
+      display: inline-block;
+      background: var(--accent-light);
+      color: var(--accent);
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      margin-bottom: 16px;
+    }
+
+    /* =========================================
+       5. 본문 타이포그래피 (Reading Mode)
+       ========================================= */
+    #title {
+      font-family: 'Gowun Dodum', sans-serif;
+      font-size: 1.6rem;
+      line-height: 1.3;
+      margin-top: 0;
+      margin-bottom: 24px;
+      word-break: keep-all;
+    }
+
+    .content-body {
+      font-family: 'Gowun Batang', serif; /* 명조체 적용 */
+      font-size: 1.15rem;
+      line-height: 1.85; /* 줄간격 넓게 */
+      color: #333;
+      text-align: justify;
+      word-break: keep-all;
+    }
+    
+    .content-body p { margin-bottom: 20px; }
+
+    /* =========================================
+       6. 퀴즈 UI (Quiz)
+       ========================================= */
+    .quiz-header {
+      font-family: 'Gowun Dodum', sans-serif;
+      font-size: 1.2rem;
+      color: var(--accent);
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .quiz-header::before {
+      content: '';
+      display: block;
+      width: 4px;
+      height: 18px;
+      background: var(--accent);
+      border-radius: 2px;
+    }
+
+    .question-text {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-bottom: 20px;
+      word-break: keep-all;
+    }
+
+    /* 버튼 스타일 */
+    .choice-container { display: flex; flex-direction: column; gap: 12px; }
+
+    .choice-btn {
+      background: #FFFFFF;
+      border: 2px solid #EEE;
+      padding: 16px;
+      border-radius: 12px;
+      text-align: left;
+      font-size: 1rem;
+      color: var(--text-main);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-family: 'Pretendard', sans-serif;
+      line-height: 1.4;
+    }
+
+    .choice-btn:hover { border-color: var(--accent); background: #FAFAFA; }
+    .choice-btn:active { transform: scale(0.99); }
+
+    .choice-btn.selected {
+      border-color: var(--accent);
+      background-color: var(--accent-light);
+      color: var(--accent-hover);
+      font-weight: 700;
+    }
+
+    /* =========================================
+       7. 드래그 앤 드롭 (Sortable)
+       ========================================= */
     #sortable-list { list-style: none; padding: 0; margin: 0; }
-    .sort-item { background: #FAFAFA; border: 1px solid #eee; padding: 15px; margin-bottom: 8px; border-radius: 8px; cursor: grab; display: flex; align-items: center; font-size: 0.95em; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
-    .sort-item:before { content: '☰'; margin-right: 10px; color: #bbb; }
-    .check-btn { width: 100%; background: var(--primary); color: white; border: none; padding: 14px; border-radius: 10px; font-size: 1.1em; font-weight: bold; cursor: pointer; margin-top: 15px; }
-    .result-box { margin-top: 15px; padding: 15px; border-radius: 10px; text-align: center; display: none; font-weight: bold; }
-    .result-box.correct { background: var(--correct); color: #2E7D32; border: 1px solid #C8E6C9; }
-    .result-box.wrong { background: var(--wrong); color: #C62828; border: 1px solid #FFCDD2; }
-    #loading { text-align: center; padding: 50px; font-size: 1.2em; color: #666; }
+
+    .sort-item {
+      background: #FFF;
+      border: 1px solid #E0E0E0;
+      padding: 16px 16px 16px 44px; /* 핸들 공간 확보 */
+      margin-bottom: 10px;
+      border-radius: 12px;
+      position: relative;
+      cursor: grab;
+      font-size: 1rem;
+      line-height: 1.5;
+      color: #444;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.03);
+      transition: box-shadow 0.2s, transform 0.2s;
+    }
+
+    /* 드래그 핸들 아이콘 */
+    .sort-item::before {
+      content: '⠿';
+      position: absolute;
+      left: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #CCC;
+      font-size: 1.2rem;
+    }
+
+    .sort-item:active { cursor: grabbing; box-shadow: 0 8px 16px rgba(0,0,0,0.1); }
+
+    /* =========================================
+       8. 결과 및 공통 버튼 (Results & Buttons)
+       ========================================= */
+    .check-btn {
+      width: 100%;
+      background: var(--accent);
+      color: white;
+      border: none;
+      padding: 16px;
+      border-radius: 12px;
+      font-size: 1.1rem;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 24px;
+      transition: background 0.2s;
+      font-family: 'Pretendard', sans-serif;
+    }
+
+    .check-btn:hover { background: var(--accent-hover); }
+
+    .result-box {
+      margin-top: 20px;
+      padding: 20px;
+      border-radius: 12px;
+      font-weight: 600;
+      display: none;
+      animation: fadeIn 0.3s ease;
+      line-height: 1.6;
+    }
+
+    .result-box.correct { background: var(--accent-light); color: var(--accent-hover); }
+    .result-box.wrong { background: #FFEBEE; color: var(--error); }
+
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* =========================================
+       9. 로딩 애니메이션 (Loading)
+       ========================================= */
+    #loading {
+      text-align: center;
+      padding: 100px 0;
+      color: var(--text-sub);
+    }
+    .spinner {
+      width: 40px; height: 40px;
+      border: 4px solid #EEE;
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      margin: 0 auto 16px;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin { 100% { transform: rotate(360deg); } }
+
   </style>
 </head>
 <body>
 
   <div class="container">
-    <h1>🌱 오늘의 문해력</h1>
-    <div class="sub-title">하루 한 편, 똑똑해지는 습관</div>
+    <header>
+      <h1>🌱 오늘의 문해력</h1>
+      <div class="sub-title">하루 한 편, 생각의 키가 자라요</div>
+    </header>
 
-    <div id="loading">오늘의 글을 가져오고 있어요... 🚚</div>
+    <!-- 로딩 화면 -->
+    <div id="loading">
+      <div class="spinner"></div>
+      <div>오늘의 이야기를 배달 중이에요... 🚲</div>
+    </div>
 
+    <!-- 메인 앱 영역 -->
     <div id="app" style="display:none;">
       
       <!-- 1. 본문 카드 -->
       <div class="card">
         <span id="category" class="category-badge">카테고리</span>
-        <h2 id="title">제목</h2>
-        <div id="content" class="content-body"></div>
+        <h2 id="title">제목 로딩 중...</h2>
+        <div id="content" class="content-body">
+          <!-- 본문 내용이 들어갑니다 -->
+        </div>
       </div>
 
-      <!-- 2. Q1: 4지선다 카드 -->
+      <!-- 2. Q1: 4지선다 -->
       <div class="card">
-        <div class="quiz-header">Q1. 내용을 확인해요</div>
-        <p id="q1-text" style="font-size:1.1em; font-weight:bold;">문제</p>
+        <div class="quiz-header">첫 번째 미션</div>
+        <div id="q1-text" class="question-text">문제</div>
         
         <div id="q1-options" class="choice-container"></div>
         
-        <button class="check-btn" onclick="checkQ1()">정답 확인</button>
+        <button class="check-btn" onclick="checkQ1()">정답 확인하기</button>
         <div id="q1-result" class="result-box"></div>
       </div>
 
-      <!-- 3. Q2: 순서 맞추기 카드 -->
+      <!-- 3. Q2: 순서 맞추기 -->
       <div class="card">
-        <div class="quiz-header">Q2. 순서를 맞춰봐요</div>
-        <p style="color:#666; font-size:0.9em; margin-bottom:15px;">
-          글의 흐름에 맞게 카드를 드래그해서 순서를 섞어보세요.
-        </p>
+        <div class="quiz-header">두 번째 미션</div>
+        <div class="question-text">
+          문단 순서 맞추기
+          <div style="font-weight:400; font-size:0.9em; color:#666; margin-top:4px;">
+            카드를 드래그해서 올바른 순서대로 나열해주세요.
+          </div>
+        </div>
         
         <ul id="sortable-list"></ul>
         
-        <button class="check-btn" onclick="checkQ2()">순서 확인</button>
+        <button class="check-btn" onclick="checkQ2()">순서 확인하기</button>
         <div id="q2-result" class="result-box"></div>
       </div>
 
@@ -91,7 +338,6 @@
       fetchContent();
     };
 
-    // google.script.run 대신 fetch 사용
     function fetchContent() {
       fetch(GAS_WEB_APP_URL)
         .then(response => response.json())
@@ -100,7 +346,8 @@
         })
         .catch(error => {
           console.error('Error:', error);
-          document.getElementById('loading').innerHTML = "데이터를 불러오는데 실패했습니다. <br> 잠시 후 다시 시도해주세요.";
+          document.getElementById('loading').innerHTML = 
+            "<p>앗! 데이터를 불러오지 못했어요 😢<br>잠시 후 새로고침 해주세요.</p>";
         });
     }
 
@@ -109,9 +356,10 @@
       
       if (!data || data.status !== 'success') {
         document.getElementById('app').innerHTML = `
-          <div class="card" style="text-align:center">
-            <h3>💤 아직 오늘의 글이 없어요.</h3>
-            <p>관리자가 생성할 때까지 기다려주세요!</p>
+          <div class="card" style="text-align:center; padding: 50px 20px;">
+            <div style="font-size: 3rem; margin-bottom: 20px;">💤</div>
+            <h3 style="margin-bottom:10px;">오늘의 글이 아직 도착하지 않았어요.</h3>
+            <p style="color:#666;">선생님이 글을 준비 중이십니다.<br>조금만 기다려주세요!</p>
           </div>`;
         document.getElementById('app').style.display = 'block';
         return;
@@ -132,17 +380,18 @@
       
       const options = data.q1.options || [];
       options.forEach((optText, index) => {
-        const btn = document.createElement('button');
+        const btn = document.createElement('div'); // button 태그 대신 div로 스타일링
         btn.className = 'choice-btn';
-        btn.innerText = (index + 1) + ". " + optText;
+        btn.innerHTML = `<span>${index + 1}.</span> ${optText}`;
         btn.onclick = function() { selectOption(index + 1, btn); };
         q1Container.appendChild(btn);
       });
 
-      // Q2 표시
+      // Q2 표시 (셔플)
       const list = document.getElementById('sortable-list');
       let items = data.q2.items.map((txt, idx) => ({ text: txt, originalIdx: idx }));
       
+      // 셔플 로직
       for (let i = items.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [items[i], items[j]] = [items[j], items[i]];
@@ -156,7 +405,13 @@
         list.appendChild(li);
       });
 
-      new Sortable(list, { animation: 150 });
+      // 모바일 터치 감도 개선을 위한 옵션 추가
+      new Sortable(list, { 
+        animation: 150,
+        ghostClass: 'sort-ghost',
+        delay: 100, // 실수로 드래그 되는 것 방지 (약간 눌러야 드래그)
+        delayOnTouchOnly: true
+      });
     }
 
     // Q1 로직
@@ -173,16 +428,16 @@
       
       if (!q1UserChoice) {
         resultBox.className = 'result-box wrong';
-        resultBox.innerText = '보기를 선택해주세요!';
+        resultBox.innerText = '☝️ 보기를 선택해주세요!';
         return;
       }
 
       if (parseInt(q1UserChoice) === parseInt(serverData.q1.answer)) {
         resultBox.className = 'result-box correct';
-        resultBox.innerHTML = '정답입니다! 💯<br><br><span style="font-weight:normal; font-size:0.9em">' + serverData.q1.explanation + '</span>';
+        resultBox.innerHTML = '👏 정답입니다! 참 잘했어요.<br><br><div style="font-weight:normal; font-size:0.95em; color:#444;">' + serverData.q1.explanation + '</div>';
       } else {
         resultBox.className = 'result-box wrong';
-        resultBox.innerText = '틀렸습니다. 다시 한번 읽어보세요!';
+        resultBox.innerText = '앗, 다시 한 번 생각해볼까요? 🤔';
       }
     }
 
@@ -200,10 +455,10 @@
 
       if (isCorrect) {
         resultBox.className = 'result-box correct';
-        resultBox.innerText = '완벽해요! 글의 흐름을 잘 파악했네요! 🎉';
+        resultBox.innerText = '대단해요! 글의 흐름을 완벽하게 파악했네요! 🎉';
       } else {
         resultBox.className = 'result-box wrong';
-        resultBox.innerText = '순서가 조금 다른 것 같아요. 다시 정리해볼까요?';
+        resultBox.innerText = '순서가 조금 어색해요. 다시 문단을 옮겨볼까요?';
       }
     }
   </script>
