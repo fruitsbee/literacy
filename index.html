@@ -147,7 +147,7 @@
     }
 
    /* =========================================
-       ⚡️ [핵심] 드래그 앤 드롭 애니메이션 고도화
+       ⚡️ [핵심] 드래그 앤 드롭 최적화 CSS
        ========================================= */
     #sortable-list { list-style: none; padding: 0; margin: 0; position: relative; }
 
@@ -163,45 +163,53 @@
       line-height: 1.5;
       color: #444;
       box-shadow: 0 2px 4px rgba(0,0,0,0.03);
-      /* 부드러운 전환 효과 */
-      transition: transform 0.2s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.2s;
-      user-select: none; /* 텍스트 선택 방지 */
+      
+      /* ✅ [수정 1] transform 애니메이션 제거 (반응 속도 개선) */
+      /* 오직 그림자만 부드럽게 변하도록 설정 */
+      transition: box-shadow 0.15s ease;
+
+      /* ✅ [수정 2] 모바일 스크롤 간섭 완전 차단 */
+      touch-action: none;
+      -webkit-touch-callout: none;
+      user-select: none;
     }
 
-    /* 핸들 아이콘 */
     .sort-item::before {
       content: '⠿';
       position: absolute;
-      left: 16px;
-      top: 50%;
-      transform: translateY(-50%);
-      color: #CCC;
-      font-size: 1.4rem;
+      left: 16px; top: 50%; transform: translateY(-50%);
+      color: #CCC; font-size: 1.4rem;
     }
 
-    /* 1. 드래그 중인 아이템 (손가락 따라다니는 녀석) */
+    /* 드래그 중인 아이템 (떠다니는 녀석) */
     .sortable-fallback {
+      /* ✅ [수정 3] 손가락 위치와 완벽 일치를 위해 강제 설정 */
       opacity: 1 !important;
       background: #fff;
       border: 2px solid var(--accent);
-      /* 공중에 붕 뜬 느낌: 그림자 크게, 살짝 기울기, 확대 */
-      box-shadow: 0 15px 30px rgba(0,0,0,0.15);
-      transform: scale(1.03) rotate(1deg); 
-      z-index: 9999; /* 제일 위에 */
+      box-shadow: 0 10px 20px rgba(0,0,0,0.15); /* 그림자 깔끔하게 */
+      z-index: 99999;
       cursor: grabbing;
+
+      /* ✅ [수정 4] 크기/회전 변형 제거하여 좌표 오차 방지 */
+      /* scale / rotate 없음 */
+      
+      /* ✅ [수정 5] 이벤트 통과 (필수) */
+      pointer-events: none;
     }
 
-    /* 2. 원래 자리에 남은 빈 공간 (Ghost) */
+    /* ✅ [수정 6] 드래그 중인 요소는 어떠한 딜레이(transition)도 없어야 함 */
+    .sortable-fallback,
+    .sortable-drag {
+      transition: none !important;
+    }
+
+    /* 빈 공간 스타일 */
     .sortable-ghost {
       opacity: 0.4;
       background: #F0F0F0;
       border: 2px dashed #CCC;
       box-shadow: none;
-    }
-
-    /* 3. 드래그 할 때 숨겨지는 원본 */
-    .sortable-drag {
-      opacity: 0;
     }
 
     /* 버튼 및 결과 */
@@ -228,7 +236,6 @@
     .result-box.wrong { background: #FFEBEE; color: var(--error); }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
-    /* 로딩 */
     #loading { text-align: center; padding: 100px 0; color: var(--text-sub); }
     .spinner {
       width: 40px; height: 40px; border: 4px solid #EEE;
