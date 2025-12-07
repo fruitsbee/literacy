@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>매일 문해력 쑥쑥</title>
+  <title>매일 문해력 쑥쑥 - 완성본</title>
   
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -145,7 +145,7 @@
     }
 
     /* =========================================
-       ⚡️ [핵심] 드래그 앤 드롭 애니메이션 고도화
+       ⚡️ [핵심] 드래그 앤 드롭 애니메이션 고도화 (수정됨)
        ========================================= */
     #sortable-list { list-style: none; padding: 0; margin: 0; position: relative; }
 
@@ -161,9 +161,9 @@
       line-height: 1.5;
       color: #444;
       box-shadow: 0 2px 4px rgba(0,0,0,0.03);
-      /* 부드러운 전환 효과 */
       transition: transform 0.2s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.2s;
       user-select: none; /* 텍스트 선택 방지 */
+      touch-action: none; /* 브라우저 기본 터치 액션 방지 */
     }
 
     /* 핸들 아이콘 */
@@ -177,16 +177,19 @@
       font-size: 1.4rem;
     }
 
-    /* 1. 드래그 중인 아이템 (손가락 따라다니는 녀석) */
+    /* 1. 드래그 중인 아이템 (손가락 따라다니는 녀석) - ✅ 중요 수정됨 */
     .sortable-fallback {
       opacity: 1 !important;
       background: #fff;
       border: 2px solid var(--accent);
-      /* 공중에 붕 뜬 느낌: 그림자 크게, 살짝 기울기, 확대 */
       box-shadow: 0 15px 30px rgba(0,0,0,0.15);
-      transform: scale(1.03) rotate(1deg); 
       z-index: 9999; /* 제일 위에 */
       cursor: grabbing;
+
+      /* ✅ 수정 포인트 1: transform 충돌 방지를 위해 개별 속성 사용 및 포인터 이벤트 통과 */
+      scale: 1.03;      /* 약간 확대 */
+      rotate: 1deg;     /* 살짝 기울기 */
+      pointer-events: none; /* 마우스/터치 이벤트가 이 요소를 통과하여 밑의 드래그 시스템에 전달되게 함 */
     }
 
     /* 2. 원래 자리에 남은 빈 공간 (Ghost) */
@@ -251,14 +254,12 @@
 
     <div id="app" style="display:none;">
       
-      <!-- 본문 -->
       <div class="card">
         <span id="category" class="category-badge">카테고리</span>
         <h2 id="title"></h2>
         <div id="content" class="content-body"></div>
       </div>
 
-      <!-- Q1 -->
       <div class="card">
         <div class="quiz-header">첫 번째 미션</div>
         <div id="q1-text" class="question-text"></div>
@@ -267,7 +268,6 @@
         <div id="q1-result" class="result-box"></div>
       </div>
 
-      <!-- Q2 (드래그) -->
       <div class="card">
         <div class="quiz-header">두 번째 미션</div>
         <div class="question-text">
@@ -351,18 +351,22 @@
         list.appendChild(li);
       });
 
-      // 🔥 [핵심] 쫀득한 드래그 설정을 위한 옵션
+      // 🔥 [핵심] 드래그 앤 드롭 설정 (수정됨)
       new Sortable(list, {
-        animation: 300,        // 이동 애니메이션 속도 (부드럽게)
-        delay: 100,            // 모바일 터치 실수 방지 (0.1초 꾹 눌러야 드래그)
+        animation: 300,
+        delay: 150,             // 모바일에서 꾹 누르는 시간 (조금 늘림)
         delayOnTouchOnly: true, 
         touchStartThreshold: 5, // 민감도 조절
         
         // 🚀 중요: 브라우저 기본 드래그를 끄고, JS로 직접 렌더링 (Fallback Mode)
-        forceFallback: true,   
+        forceFallback: true,    
         fallbackClass: "sortable-fallback", // 드래그 중인 아이템 클래스
         ghostClass: "sortable-ghost",       // 빈 자리 클래스
-        dragClass: "sortable-drag"          // 원본 숨김 클래스
+        dragClass: "sortable-drag",          // 원본 숨김 클래스
+
+        // ✅ 수정 포인트 2: 드래그 요소를 body에 붙여서 제한 없이 움직이게 함
+        fallbackOnBody: true,
+        fallbackTolerance: 5 // 클릭과 드래그를 구분하는 감도
       });
     }
 
