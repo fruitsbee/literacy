@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>매일 문해력 쑥쑥</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Gowun+Dodum&family=Pretendard:wght@400;600;700&display=swap" rel="stylesheet">
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+  
+  <style>
+    /* =========================================
+       1. 기본 설정
+       ========================================= */
+    :root {
+      --bg-paper: #F9F7F1;
+      --card-bg: #FFFFFF;
+      --text-main: #2C2C2C;
+      --text-sub: #6D6D6D;
+      --accent: #5D7D62;
+      --accent-light: #E8EFE9;
+      --accent-hover: #4A634E;
+      --error: #D32F2F;
+      --shadow: 0 8px 24px rgba(0,0,0,0.06);
+      --radius: 16px;
+    }
+
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    
+    body {
+      font-family: 'Pretendard', sans-serif;
+      background-color: var(--bg-paper);
+      margin: 0;
+      padding: 0;
+      color: var(--text-main);
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    /* =========================================
+       2. 레이아웃 & 카드 스타일
+       ========================================= */
+    .container {
+      max-width: 680px;
+      margin: 0 auto;
+      padding: 40px 20px 80px;
+    }
+
+    @media (max-width: 480px) {
+      .container { padding: 20px 16px 60px; }
+    }
+
+    header { text-align: center; margin-bottom: 30px; }
+    h1 {
+      font-family: 'Gowun Dodum', sans-serif;
+      color: var(--accent);
+      font-size: 1.8rem;
+      margin: 0 0 8px 0;
+      letter-spacing: -0.5px;
+    }
+    .sub-title { color: var(--text-sub); font-size: 0.95rem; }
+
+    .card {
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      padding: 30px;
+      margin-bottom: 24px;
+      box-shadow: var(--shadow);
+      border: 1px solid rgba(0,0,0,0.02);
+    }
+    @media (max-width: 480px) {
+      .card { padding: 24px 20px; border-radius: 20px; }
+    }
+
+    .category-badge {
+      display: inline-block;
+      background: var(--accent-light);
+      color: var(--accent);
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      margin-bottom: 16px;
+    }
+
+    /* 본문 텍스트 스타일 */
+    #title {
+      font-family: 'Gowun Dodum', sans-serif;
+      font-size: 1.6rem;
+      line-height: 1.3;
+      margin-top: 0;
+      margin-bottom: 24px;
+      word-break: keep-all;
+    }
+    .content-body {
+      font-family: 'Gowun Batang', serif;
+      font-size: 1.15rem;
+      line-height: 1.85;
+      color: #333;
+      text-align: justify;
+      word-break: keep-all;
+    }
+    /* 중요: 파싱된 strong 태그 스타일 */
+    .content-body strong, .result-box strong {
+      color: var(--accent-hover);
+      background: rgba(93, 125, 98, 0.1); /* 형광펜 효과 살짝 */
+      padding: 0 2px;
+    }
+
+    /* 퀴즈 UI */
+    .quiz-header {
+      font-family: 'Gowun Dodum', sans-serif;
+      font-size: 1.2rem;
+      color: var(--accent);
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .quiz-header::before {
+      content: ''; display: block; width: 4px; height: 18px;
+      background: var(--accent); border-radius: 2px;
+    }
+    .question-text {
+      font-size: 1.1rem; font-weight: 600; margin-bottom: 20px; word-break: keep-all;
+    }
+
+    .choice-container { display: flex; flex-direction: column; gap: 12px; }
+    .choice-btn {
+      background: #FFFFFF;
+      border: 2px solid #EEE;
+      padding: 16px;
+      border-radius: 12px;
+      font-size: 1rem;
+      color: var(--text-main);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-family: 'Pretendard', sans-serif;
+    }
+    .choice-btn:hover { border-color: var(--accent); background: #FAFAFA; }
+    .choice-btn.selected {
+      border-color: var(--accent); background-color: var(--accent-light);
+      color: var(--accent-hover); font-weight: 700;
+    }
+
+   /* =========================================
+       ⚡️ [핵심] 드래그 앤 드롭 최적화 CSS
+       ========================================= */
+    #sortable-list { list-style: none; padding: 0; margin: 0; position: relative; }
+
+    .sort-item {
+      background: #FFF;
+      border: 1px solid #E0E0E0;
+      padding: 18px 18px 18px 48px;
+      margin-bottom: 12px;
+      border-radius: 14px;
+      position: relative;
+      cursor: grab;
+      font-size: 1rem;
+      line-height: 1.5;
+      color: #444;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.03);
+      
+      /* ✅ [수정 1] transform 애니메이션 제거 (반응 속도 개선) */
+      /* 오직 그림자만 부드럽게 변하도록 설정 */
+      transition: box-shadow 0.15s ease;
+
+      /* ✅ [수정 2] 모바일 스크롤 간섭 완전 차단 */
+      touch-action: none;
+      -webkit-touch-callout: none;
+      user-select: none;
+    }
+
+    .sort-item::before {
+      content: '⠿';
+      position: absolute;
+      left: 16px; top: 50%; transform: translateY(-50%);
+      color: #CCC; font-size: 1.4rem;
+    }
+
+    /* 드래그 중인 아이템 (떠다니는 녀석) */
+    .sortable-fallback {
+      /* ✅ [수정 3] 손가락 위치와 완벽 일치를 위해 강제 설정 */
+      opacity: 1 !important;
+      background: #fff;
+      border: 2px solid var(--accent);
+      box-shadow: 0 10px 20px rgba(0,0,0,0.15); /* 그림자 깔끔하게 */
+      z-index: 99999;
+      cursor: grabbing;
+
+      /* ✅ [수정 4] 크기/회전 변형 제거하여 좌표 오차 방지 */
+      /* scale / rotate 없음 */
+      
+      /* ✅ [수정 5] 이벤트 통과 (필수) */
+      pointer-events: none;
+    }
+
+    /* ✅ [수정 6] 드래그 중인 요소는 어떠한 딜레이(transition)도 없어야 함 */
+    .sortable-fallback,
+    .sortable-drag {
+      transition: none !important;
+    }
+
+    /* 빈 공간 스타일 */
+    .sortable-ghost {
+      opacity: 0.4;
+      background: #F0F0F0;
+      border: 2px dashed #CCC;
+      box-shadow: none;
+    }
+
+    /* 버튼 및 결과 */
+    .check-btn {
+      width: 100%;
+      background: var(--accent);
+      color: white;
+      border: none;
+      padding: 16px;
+      border-radius: 12px;
+      font-size: 1.1rem;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 24px;
+      font-family: 'Pretendard', sans-serif;
+    }
+    .check-btn:active { transform: scale(0.98); }
+
+    .result-box {
+      margin-top: 20px; padding: 20px; border-radius: 12px; font-weight: 600;
+      display: none; animation: fadeIn 0.3s ease; line-height: 1.6;
+    }
+    .result-box.correct { background: var(--accent-light); color: var(--accent-hover); }
+    .result-box.wrong { background: #FFEBEE; color: var(--error); }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+    #loading { text-align: center; padding: 100px 0; color: var(--text-sub); }
+    .spinner {
+      width: 40px; height: 40px; border: 4px solid #EEE;
+      border-top-color: var(--accent); border-radius: 50%;
+      margin: 0 auto 16px; animation: spin 1s linear infinite;
+    }
+    @keyframes spin { 100% { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <h1>🌱 오늘의 문해력</h1>
+      <div class="sub-title">하루 한 편, 생각의 키가 자라요</div>
+    </header>
+
+    <div id="loading">
+      <div class="spinner"></div>
+      <div>오늘의 이야기를 가져오는 중... 🚲</div>
+    </div>
+
+    <div id="app" style="display:none;">
+      
+      <div class="card">
+        <span id="category" class="category-badge">카테고리</span>
+        <h2 id="title"></h2>
+        <div id="content" class="content-body"></div>
+      </div>
+
+      <div class="card">
+        <div class="quiz-header">첫 번째 미션</div>
+        <div id="q1-text" class="question-text"></div>
+        <div id="q1-options" class="choice-container"></div>
+        <button class="check-btn" onclick="checkQ1()">정답 확인하기</button>
+        <div id="q1-result" class="result-box"></div>
+      </div>
+
+      <div class="card">
+        <div class="quiz-header">두 번째 미션</div>
+        <div class="question-text">
+          문단 순서 맞추기
+          <div style="font-weight:400; font-size:0.9em; color:#666; margin-top:4px;">
+            카드를 꾹 눌러서 올바른 순서로 옮겨보세요.
+          </div>
+        </div>
+        <ul id="sortable-list"></ul>
+        <button class="check-btn" onclick="checkQ2()">순서 확인하기</button>
+        <div id="q2-result" class="result-box"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    // 👇 배포된 GAS 웹앱 URL을 입력하세요
+    const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzr2RZqmVQqRi3Ms-zU1goBn71YCVUOyyAiNHCbpo-6RAG2RlPEOB7pKSDvgIMDTpyIrw/exec";
+
+    let serverData = {};
+    let q1UserChoice = null;
+
+    window.onload = function() { fetchContent(); };
+
+    function fetchContent() {
+      fetch(GAS_WEB_APP_URL)
+        .then(res => res.json())
+        .then(data => initApp(data))
+        .catch(err => {
+          console.error(err);
+          document.getElementById('loading').innerHTML = "<p>데이터 로딩 실패 😢<br>새로고침 해주세요.</p>";
+        });
+    }
+
+    function initApp(data) {
+      document.getElementById('loading').style.display = 'none';
+      if (!data || data.status !== 'success') {
+        document.getElementById('app').innerHTML = `
+          <div class="card" style="text-align:center; padding:50px;">
+            <h3>💤 오늘의 글이 없어요.</h3>
+            <p>조금만 기다려주세요!</p>
+          </div>`;
+        document.getElementById('app').style.display = 'block';
+        return;
+      }
+
+      serverData = data;
+      document.getElementById('app').style.display = 'block';
+      
+      // ✅ [중요] safeParse() 함수를 통해 데이터를 안전하게 가공합니다.
+      document.getElementById('category').innerText = data.category;
+      document.getElementById('title').innerHTML = safeParse(data.title);
+      document.getElementById('content').innerHTML = safeParse(data.content);
+      document.getElementById('q1-text').innerHTML = safeParse(data.q1.question);
+      
+      // Q1 렌더링
+      const q1Container = document.getElementById('q1-options');
+      q1Container.innerHTML = '';
+      (data.q1.options || []).forEach((opt, idx) => {
+        const btn = document.createElement('div');
+        btn.className = 'choice-btn';
+        // 보기에도 혹시 몰라 파싱 적용
+        btn.innerHTML = `<span>${idx + 1}.</span> ${safeParse(opt)}`;
+        btn.onclick = () => selectOption(idx + 1, btn);
+        q1Container.appendChild(btn);
+      });
+
+      // Q2 렌더링
+      const list = document.getElementById('sortable-list');
+      // 문단 순서 섞기
+      let items = data.q2.items.map((txt, i) => ({ text: txt, originalIdx: i }));
+      for (let i = items.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [items[i], items[j]] = [items[j], items[i]];
+      }
+
+      items.forEach(item => {
+        const li = document.createElement('li');
+        li.className = 'sort-item';
+        // 문단 카드 안의 텍스트도 파싱 적용
+        li.innerHTML = safeParse(item.text); 
+        li.dataset.idx = item.originalIdx;
+        list.appendChild(li);
+      });
+
+      // 🔥 [드래그 설정] 손가락에 착 붙는 최적값
+      new Sortable(list, {
+        animation: 150,
+        delay: 80, 
+        delayOnTouchOnly: true,
+        touchStartThreshold: 3, 
+        fallbackTolerance: 3,
+
+        forceFallback: true,    
+        fallbackClass: "sortable-fallback",
+        ghostClass: "sortable-ghost",
+        dragClass: "sortable-drag",
+        fallbackOnBody: true 
+      });
+    }
+
+    // ✅ [핵심 기능] 텍스트 파싱 함수
+    // 1. GAS에서 넘어온 Escape된 문자(&#42; 등)를 먼저 되돌립니다.
+    // 2. 그 후 **문자**를 <strong>문자</strong>로 바꿉니다.
+    // 3. 줄바꿈(\n)을 <br>로 바꿉니다.
+    function safeParse(text) {
+      if (!text) return "";
+      let temp = String(text); // 문자열로 확실하게 변환
+
+      // 1단계: HTML Unescape (혹시 모를 이중 인코딩 방지)
+      // &#42; 또는 &ast; 는 * 입니다.
+      temp = temp.replace(/&#42;/g, '*').replace(/&ast;/g, '*');
+      temp = temp.replace(/&#95;/g, '_').replace(/&lowbar;/g, '_');
+      temp = temp.replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+      temp = temp.replace(/&amp;/g, '&'); // &는 맨 마지막에
+
+      // 2단계: Markdown Bold 처리 (** 텍스트 **)
+      // 탐욕적이지 않게(.*?) 처리하여 여러 개가 있어도 각각 적용
+      temp = temp.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+
+      // 3단계: 줄바꿈 처리 (\n -> <br>)
+      temp = temp.replace(/\n/g, '<br>');
+
+      return temp;
+    }
+
+    // Q1 로직
+    function selectOption(n, el) {
+      q1UserChoice = n;
+      document.querySelectorAll('.choice-btn').forEach(b => b.classList.remove('selected'));
+      el.classList.add('selected');
+    }
+
+    function checkQ1() {
+      const res = document.getElementById('q1-result');
+      res.style.display = 'block';
+      if (!q1UserChoice) {
+        res.className = 'result-box wrong'; res.innerText = '☝️ 보기를 선택해주세요!'; return;
+      }
+      if (parseInt(q1UserChoice) === parseInt(serverData.q1.answer)) {
+        res.className = 'result-box correct'; 
+        // 해설 부분도 파싱 적용
+        res.innerHTML = '👏 정답입니다!<br><br><div style="font-weight:normal; font-size:0.9em; color:#444;">' + 
+                        safeParse(serverData.q1.explanation) + 
+                        '</div>';
+      } else {
+        res.className = 'result-box wrong'; res.innerText = '다시 한 번 생각해볼까요? 🤔';
+      }
+    }
+
+    // Q2 로직
+    function checkQ2() {
+      const els = document.querySelectorAll('#sortable-list .sort-item');
+      let correct = true;
+      els.forEach((el, i) => { if(parseInt(el.dataset.idx) !== i) correct = false; });
+      
+      const res = document.getElementById('q2-result');
+      res.style.display = 'block';
+      if (correct) {
+        res.className = 'result-box correct'; res.innerText = '완벽해요! 글의 흐름을 잘 파악했네요! 🎉';
+      } else {
+        res.className = 'result-box wrong'; res.innerText = '순서가 조금 어색해요. 다시 문단을 옮겨볼까요?';
+      }
+    }
+  </script>
+</body>
+</html>
