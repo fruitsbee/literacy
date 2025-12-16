@@ -26,20 +26,23 @@
     #title { font-family: 'Gowun Dodum'; font-size: 1.6rem; margin-top: 0; line-height: 1.3; }
     .content-body { font-family: 'Gowun Batang'; font-size: 1.15rem; line-height: 1.8; text-align: justify; word-break: keep-all; }
     
-    /* 📝 단어 뜻풀이 스타일 */
+    /* 📝 단어 뜻풀이 스타일 (점선 밑줄 + 손가락 커서) */
     .vocab {
-      color: var(--accent-hover); font-weight: 800; border-bottom: 2px dotted var(--accent); cursor: pointer;
-      position: relative; transition: background 0.2s;
+      color: var(--accent-hover);
+      font-weight: 800;
+      border-bottom: 2px dotted var(--accent);
+      cursor: pointer;
+      position: relative;
     }
     .vocab:hover { background-color: rgba(93, 125, 98, 0.1); border-radius: 4px; }
     
-    /* 알림창 (Toast) */
+    /* 단어 뜻 알림창 (Toast) */
     #vocab-toast {
       visibility: hidden; min-width: 250px; max-width: 90%;
       background-color: #333; color: #fff; text-align: center;
       border-radius: 50px; padding: 12px 24px;
-      position: fixed; z-index: 1000; left: 50%; bottom: 30px; transform: translateX(-50%);
-      font-size: 0.95rem; box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      position: fixed; z-index: 2000; left: 50%; bottom: 30px; transform: translateX(-50%);
+      font-size: 0.95rem; box-shadow: 0 4px 12px rgba(0,0,0,0.3);
       opacity: 0; transition: opacity 0.3s, bottom 0.3s;
     }
     #vocab-toast.show { visibility: visible; opacity: 1; bottom: 50px; }
@@ -50,12 +53,15 @@
     .audio-btn:hover { border-color: var(--accent); background: #FAFAFA; }
     .audio-btn.playing { border-color: var(--accent); background: var(--accent-light); color: var(--accent); font-weight: 700; }
 
-    /* 퀴즈 UI */
+    /* 로딩 애니메이션 */
+    .spinner { width: 16px; height: 16px; border: 2px solid #ccc; border-top-color: var(--accent); border-radius: 50%; animation: spin 1s linear infinite; display: inline-block; vertical-align: middle; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    
+    /* 퀴즈 공통 */
     .choice-btn { width: 100%; background: #FFF; border: 2px solid #EEE; padding: 16px; border-radius: 12px; margin-bottom: 10px; cursor: pointer; text-align: left; font-size: 1rem; transition: 0.2s; }
     .choice-btn:hover { border-color: var(--accent); }
     .choice-btn.selected { background: var(--accent-light); border-color: var(--accent); color: var(--accent-hover); font-weight: 700; }
     .check-btn { width: 100%; background: var(--accent); color: white; border: none; padding: 16px; border-radius: 12px; font-weight: 700; font-size: 1.1rem; cursor: pointer; margin-top: 16px; }
-    
     .result-box { margin-top: 20px; padding: 20px; border-radius: 12px; display: none; background: #F5F5F5; line-height: 1.5; }
     .result-box.correct { background: var(--accent-light); color: var(--accent-hover); }
     .result-box.wrong { background: #FFEBEE; color: #D32F2F; }
@@ -66,9 +72,8 @@
     .sort-item::before { content: '⠿'; position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #CCC; font-size: 1.2rem; }
     .sortable-fallback { opacity: 1 !important; background: #FFF; border: 2px solid var(--accent); box-shadow: 0 10px 20px rgba(0,0,0,0.1); cursor: grabbing; }
 
-    #loading { text-align: center; padding: 80px 0; color: #888; }
-    .spinner { width: 40px; height: 40px; border: 4px solid #EEE; border-top-color: var(--accent); border-radius: 50%; margin: 0 auto 16px; animation: spin 1s linear infinite; }
-    @keyframes spin { to { transform: rotate(360deg); } }
+    #loading-screen { text-align: center; padding: 80px 0; color: #888; }
+    .main-spinner { width: 40px; height: 40px; border: 4px solid #EEE; border-top-color: var(--accent); border-radius: 50%; margin: 0 auto 16px; animation: spin 1s linear infinite; }
   </style>
 </head>
 <body>
@@ -79,8 +84,8 @@
     <div style="color: #666; font-size: 0.9rem;">하루 한 편, 생각의 키가 자라요</div>
   </header>
 
-  <div id="loading">
-    <div class="spinner"></div>
+  <div id="loading-screen">
+    <div class="main-spinner"></div>
     <p>오늘의 이야기를 가져오는 중... 🚲</p>
   </div>
 
@@ -121,16 +126,17 @@
   </div>
 </div>
 
-<!-- 단어 뜻 알림창 -->
+<!-- 단어 뜻 팝업 -->
 <div id="vocab-toast">단어 뜻</div>
 
 <script>
-  // 👇 배포된 웹앱 URL 필수 입력
+  // 👇 여기에 배포된 웹앱 URL을 꼭 넣어주세요!
   const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzr2RZqmVQqRi3Ms-zU1goBn71YCVUOyyAiNHCbpo-6RAG2RlPEOB7pKSDvgIMDTpyIrw/exec";
 
   let serverData = {};
   let q1UserChoice = null;
   let isPlaying = false;
+  let audioBlobUrl = null;
   let toastTimer;
 
   window.onload = function() {
@@ -138,13 +144,13 @@
       .then(res => res.json())
       .then(data => initApp(data))
       .catch(err => {
-        document.getElementById('loading').innerHTML = "<p>오류가 발생했습니다.<br>새로고침 해주세요.</p>";
+        document.getElementById('loading-screen').innerHTML = "<p>오류가 발생했습니다.<br>새로고침 해주세요.</p>";
         console.error(err);
       });
   };
 
   function initApp(data) {
-    document.getElementById('loading').style.display = 'none';
+    document.getElementById('loading-screen').style.display = 'none';
     if (!data || data.status !== 'success') {
       document.getElementById('app').innerHTML = `<div class='card' style='text-align:center;'><h3>💤 ${data.message || '오늘의 글이 없어요'}</h3></div>`;
       document.getElementById('app').style.display = 'block';
@@ -154,19 +160,14 @@
     serverData = data;
     document.getElementById('app').style.display = 'block';
 
-    // 1. 텍스트 렌더링 (단어 뜻 기능 포함)
+    // 1. 텍스트 렌더링 (단어 뜻 기능 적용)
     document.getElementById('category').innerText = data.category;
     document.getElementById('title').innerHTML = safeParse(data.title);
     document.getElementById('content').innerHTML = safeParse(data.content);
 
-    // 2. 오디오 설정
+    // 2. 오디오 버튼 설정
     const audioBtn = document.getElementById('audio-btn');
-    if (data.audioUrl) {
-      const player = document.getElementById('audio-player');
-      player.src = data.audioUrl;
-      // 재생 끝나면 버튼 초기화
-      player.onended = () => { isPlaying = false; updateAudioBtn(); };
-    } else {
+    if (!data.audioFileId) {
       audioBtn.style.display = 'none';
     }
 
@@ -185,7 +186,7 @@
       q1Container.appendChild(btn);
     });
 
-    // 4. Q2 렌더링 (셔플 + Sortable)
+    // 4. Q2 렌더링 (셔플)
     const list = document.getElementById('sortable-list');
     let items = data.q2.items.map((txt, i) => ({ text: txt, originalIdx: i }));
     for (let i = items.length - 1; i > 0; i--) {
@@ -208,7 +209,7 @@
   }
 
   // ==========================================
-  // 🧹 텍스트 파싱 (핵심: 단어 뜻 & 볼드)
+  // 🧹 텍스트 파싱 & 단어 뜻 기능 (핵심)
   // ==========================================
   function safeParse(text) {
     if (!text) return "";
@@ -217,12 +218,13 @@
     // 특수문자 복원
     t = t.replace(/&#42;/g, '*').replace(/&ast;/g, '*');
     
-    // ⭐ [단어](뜻) -> 클릭 가능한 span 태그로 변환
+    // ⭐ [단어](뜻) 파싱 -> 클릭 가능한 span 생성
+    // 정규식: 대괄호 안의 문자, 소괄호 안의 문자 추출
     t = t.replace(/\[([^\]]+)\]\(([^)]+)\)/g, function(match, word, mean) {
       return `<span class="vocab" onclick="showMean('${mean}')">${word}</span>`;
     });
 
-    // **볼드** -> strong 태그
+    // **볼드** -> strong
     t = t.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
     
     // 줄바꿈
@@ -231,9 +233,10 @@
   }
 
   // ==========================================
-  // 💬 단어 뜻 보여주기 (Toast)
+  // 💬 단어 뜻 팝업 보이기 (Toast)
   // ==========================================
-  function showMean(meaning) {
+  // window 객체에 등록하여 onclick에서 확실히 찾을 수 있게 함
+  window.showMean = function(meaning) {
     const toast = document.getElementById("vocab-toast");
     toast.innerText = meaning;
     toast.className = "show";
@@ -245,33 +248,62 @@
   }
 
   // ==========================================
-  // 🔊 오디오 제어 (강력한 오류 방지)
+  // 🔊 오디오 스트리밍 (다운로드 방지)
   // ==========================================
-  function toggleAudio() {
+  async function toggleAudio() {
+    const btn = document.getElementById('audio-btn');
     const player = document.getElementById('audio-player');
-    
-    if (!player.src) return;
 
+    // 1. 재생 중이면 멈춤
     if (isPlaying) {
       player.pause();
       isPlaying = false;
       updateAudioBtn();
-    } else {
-      const playPromise = player.play();
-      if (playPromise !== undefined) {
-        playPromise
-          .then(() => {
-            isPlaying = true;
-            updateAudioBtn();
-          })
-          .catch(err => {
-            console.error(err);
-            // 🚨 재생 실패 시 (보안 문제 등) 새 창 열기 제안
-            if(confirm("브라우저 설정으로 인해 바로 재생할 수 없습니다.\n새 창에서 오디오를 여시겠습니까?")) {
-              window.open(player.src, '_blank');
-            }
-          });
+      return;
+    }
+
+    // 2. 이미 데이터 받아둔게 있으면 재생
+    if (audioBlobUrl) {
+      player.play();
+      isPlaying = true;
+      updateAudioBtn();
+      return;
+    }
+
+    // 3. 서버에서 데이터 가져오기 (스트리밍)
+    try {
+      btn.innerHTML = `<div class="spinner"></div> 로딩 중...`;
+      
+      const res = await fetch(`${GAS_WEB_APP_URL}?type=audio&id=${serverData.audioFileId}`);
+      const json = await res.json();
+      
+      if (json.status !== 'success') throw new Error(json.message);
+
+      // Base64 -> Blob 변환
+      const byteCharacters = atob(json.audioData);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
       }
+      const byteArray = new Uint8Array(byteNumbers);
+      const blob = new Blob([byteArray], { type: 'audio/mp3' });
+      
+      // 임시 URL 생성
+      audioBlobUrl = URL.createObjectURL(blob);
+      player.src = audioBlobUrl;
+      
+      player.play();
+      isPlaying = true;
+      
+      // 재생 끝나면 버튼 복구
+      player.onended = () => { isPlaying = false; updateAudioBtn(); };
+      
+      updateAudioBtn();
+
+    } catch (e) {
+      console.error(e);
+      alert("오디오를 불러오지 못했습니다.");
+      updateAudioBtn();
     }
   }
 
@@ -287,9 +319,9 @@
   }
 
   // ==========================================
-  // ✅ 정답 체크
+  // ✅ 퀴즈 정답 확인
   // ==========================================
-  function checkQ1() {
+  window.checkQ1 = function() {
     const res = document.getElementById('q1-result');
     res.style.display = 'block';
     if (!q1UserChoice) { res.className='result-box wrong'; res.innerText = '보기를 선택해주세요!'; return; }
@@ -302,7 +334,7 @@
     }
   }
 
-  function checkQ2() {
+  window.checkQ2 = function() {
     const els = document.querySelectorAll('#sortable-list .sort-item');
     let correct = true;
     els.forEach((el, i) => { if (el.dataset.idx != i) correct = false; });
