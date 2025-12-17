@@ -5,28 +5,97 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>매일 문해력 쑥쑥</title>
   
+  <!-- 폰트 로드 -->
   <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Gowun+Dodum&family=Pretendard:wght@400;600;700&display=swap" rel="stylesheet">
+  <!-- 드래그앤드롭 라이브러리 -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
   
   <style>
+    /* =========================================
+       1. 디자인 시스템 (색상/기본값)
+       ========================================= */
     :root {
-      --bg-paper: #F9F7F1; --card: #FFFFFF;
-      --accent: #5D7D62; --accent-light: #E8EFE9; --accent-hover: #4A634E;
-      --text: #2C2C2C; --shadow: 0 8px 24px rgba(0,0,0,0.06); --radius: 16px;
+      --bg-paper: #F9F7F1;
+      --card-bg: #FFFFFF;
+      --accent: #5D7D62;        /* 칠판 초록색 */
+      --accent-light: #E8EFE9;  /* 연한 초록 */
+      --accent-hover: #4A634E;
+      --text-main: #2C2C2C;
+      --text-sub: #666666;
+      --error: #D32F2F;
+      --shadow: 0 8px 24px rgba(0,0,0,0.06);
+      --radius: 16px;
     }
-    body { font-family: 'Pretendard', sans-serif; background: var(--bg-paper); margin: 0; padding: 0; color: var(--text); }
-    
-    .container { max-width: 680px; margin: 0 auto; padding: 40px 20px 80px; }
+
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+    body {
+      font-family: 'Pretendard', sans-serif;
+      background-color: var(--bg-paper);
+      margin: 0; padding: 0;
+      color: var(--text-main);
+      line-height: 1.6;
+    }
+
+    /* =========================================
+       2. 레이아웃
+       ========================================= */
+    .container {
+      max-width: 680px;
+      margin: 0 auto;
+      padding: 40px 20px 100px; /* 하단 여백 충분히 */
+    }
+
     header { text-align: center; margin-bottom: 30px; }
-    h1 { font-family: 'Gowun Dodum'; color: var(--accent); margin: 0; font-size: 1.8rem; }
-    
-    .card { background: var(--card); border-radius: var(--radius); padding: 30px; margin-bottom: 24px; box-shadow: var(--shadow); }
-    .category-badge { background: var(--accent-light); color: var(--accent); padding: 6px 12px; border-radius: 8px; font-weight: 700; font-size: 0.85rem; display: inline-block; margin-bottom: 12px; }
-    
-    #title { font-family: 'Gowun Dodum'; font-size: 1.6rem; margin-top: 0; line-height: 1.3; }
-    .content-body { font-family: 'Gowun Batang'; font-size: 1.15rem; line-height: 1.8; text-align: justify; word-break: keep-all; }
-    
-    /* 📝 단어 뜻풀이 스타일 (점선 밑줄 + 손가락 커서) */
+    h1 {
+      font-family: 'Gowun Dodum', sans-serif;
+      color: var(--accent);
+      font-size: 1.8rem;
+      margin: 0 0 8px 0;
+    }
+    .sub-title { color: var(--text-sub); font-size: 0.95rem; }
+
+    .card {
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      padding: 24px;
+      margin-bottom: 24px;
+      box-shadow: var(--shadow);
+    }
+
+    /* 배지 & 타이틀 */
+    .category-badge {
+      display: inline-block;
+      background: var(--accent-light);
+      color: var(--accent);
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      margin-bottom: 12px;
+    }
+    #title {
+      font-family: 'Gowun Dodum', sans-serif;
+      font-size: 1.5rem;
+      line-height: 1.35;
+      margin-top: 0;
+      margin-bottom: 20px;
+      word-break: keep-all;
+    }
+
+    /* 본문 텍스트 */
+    .content-body {
+      font-family: 'Gowun Batang', serif;
+      font-size: 1.15rem;
+      line-height: 1.85;
+      text-align: justify;
+      word-break: keep-all;
+      color: #333;
+    }
+
+    /* =========================================
+       3. 기능: 단어 뜻풀이 (Vocab)
+       ========================================= */
     .vocab {
       color: var(--accent-hover);
       font-weight: 800;
@@ -35,45 +104,170 @@
       position: relative;
     }
     .vocab:hover { background-color: rgba(93, 125, 98, 0.1); border-radius: 4px; }
-    
-    /* 단어 뜻 알림창 (Toast) */
+
+    /* 토스트 팝업 */
     #vocab-toast {
-      visibility: hidden; min-width: 250px; max-width: 90%;
-      background-color: #333; color: #fff; text-align: center;
-      border-radius: 50px; padding: 12px 24px;
-      position: fixed; z-index: 2000; left: 50%; bottom: 30px; transform: translateX(-50%);
-      font-size: 0.95rem; box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-      opacity: 0; transition: opacity 0.3s, bottom 0.3s;
+      visibility: hidden;
+      min-width: 250px; max-width: 90%;
+      background-color: #333; color: #fff;
+      text-align: center;
+      border-radius: 50px;
+      padding: 12px 24px;
+      position: fixed;
+      z-index: 2000;
+      left: 50%; bottom: 30px;
+      transform: translateX(-50%);
+      font-size: 0.95rem;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      opacity: 0;
+      transition: opacity 0.3s, bottom 0.3s;
     }
     #vocab-toast.show { visibility: visible; opacity: 1; bottom: 50px; }
 
-    /* 오디오 버튼 */
+    /* =========================================
+       4. 기능: 오디오 버튼
+       ========================================= */
     .audio-wrapper { display: flex; justify-content: flex-end; margin-bottom: 16px; }
-    .audio-btn { background: white; border: 2px solid #EEE; border-radius: 20px; padding: 8px 16px; font-size: 0.9rem; cursor: pointer; color: #555; transition: all 0.2s; font-family: 'Pretendard'; display: flex; align-items: center; gap: 6px; }
-    .audio-btn:hover { border-color: var(--accent); background: #FAFAFA; }
-    .audio-btn.playing { border-color: var(--accent); background: var(--accent-light); color: var(--accent); font-weight: 700; }
-
-    /* 로딩 애니메이션 */
-    .spinner { width: 16px; height: 16px; border: 2px solid #ccc; border-top-color: var(--accent); border-radius: 50%; animation: spin 1s linear infinite; display: inline-block; vertical-align: middle; }
-    @keyframes spin { to { transform: rotate(360deg); } }
     
-    /* 퀴즈 공통 */
-    .choice-btn { width: 100%; background: #FFF; border: 2px solid #EEE; padding: 16px; border-radius: 12px; margin-bottom: 10px; cursor: pointer; text-align: left; font-size: 1rem; transition: 0.2s; }
-    .choice-btn:hover { border-color: var(--accent); }
-    .choice-btn.selected { background: var(--accent-light); border-color: var(--accent); color: var(--accent-hover); font-weight: 700; }
-    .check-btn { width: 100%; background: var(--accent); color: white; border: none; padding: 16px; border-radius: 12px; font-weight: 700; font-size: 1.1rem; cursor: pointer; margin-top: 16px; }
-    .result-box { margin-top: 20px; padding: 20px; border-radius: 12px; display: none; background: #F5F5F5; line-height: 1.5; }
+    .audio-btn {
+      background: #FFF;
+      border: 2px solid #EEE;
+      border-radius: 50px;
+      padding: 8px 16px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      color: #555;
+      font-family: 'Pretendard', sans-serif;
+      font-weight: 600;
+      display: flex; align-items: center; gap: 6px;
+      transition: all 0.2s;
+    }
+    .audio-btn:hover { background: #FAFAFA; border-color: var(--accent); }
+    .audio-btn.playing {
+      background: var(--accent-light);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+    .spinner {
+      width: 14px; height: 14px;
+      border: 2px solid #CCC; border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* =========================================
+       5. 퀴즈 UI (긴 지문 대응)
+       ========================================= */
+    .quiz-title {
+      font-size: 1.1rem; font-weight: 700; color: var(--accent);
+      margin-top: 0; margin-bottom: 8px;
+    }
+    .question-text { font-weight: 600; margin-bottom: 16px; word-break: keep-all; }
+
+    /* ⭐ [핵심 수정] 객관식 버튼 레이아웃 */
+    .choice-btn {
+      width: 100%;
+      background: #FFF;
+      border: 2px solid #EEE;
+      padding: 16px;
+      border-radius: 12px;
+      margin-bottom: 10px;
+      cursor: pointer;
+      
+      /* Flexbox로 번호와 텍스트 정렬 */
+      display: flex;
+      align-items: flex-start; /* 텍스트가 길어지면 위쪽 정렬 */
+      text-align: left;
+      gap: 10px;
+      
+      font-size: 1rem;
+      color: var(--text-main);
+      line-height: 1.5;
+      
+      /* 줄바꿈 허용 */
+      white-space: normal;
+      word-break: keep-all;
+      
+      transition: all 0.2s;
+    }
+    .choice-btn:hover { border-color: var(--accent); background: #FAFAFA; }
+    .choice-btn.selected {
+      background: var(--accent-light);
+      border-color: var(--accent);
+      color: var(--accent-hover);
+      font-weight: 700;
+    }
+    /* 번호 스타일 (1. 2. 3.) */
+    .choice-btn .num {
+      flex-shrink: 0; /* 번호영역 줄어들지 않음 */
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    /* 확인 버튼 */
+    .check-btn {
+      width: 100%;
+      background: var(--accent);
+      color: white;
+      border: none;
+      padding: 16px;
+      border-radius: 12px;
+      font-size: 1.1rem;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 12px;
+    }
+    
+    .result-box {
+      margin-top: 20px; padding: 20px;
+      border-radius: 12px;
+      display: none;
+      background: #F5F5F5;
+      line-height: 1.5;
+    }
     .result-box.correct { background: var(--accent-light); color: var(--accent-hover); }
     .result-box.wrong { background: #FFEBEE; color: #D32F2F; }
 
-    /* 드래그 앤 드롭 */
-    #sortable-list { list-style: none; padding: 0; }
-    .sort-item { background: white; border: 1px solid #E0E0E0; padding: 16px 16px 16px 44px; margin-bottom: 10px; border-radius: 12px; position: relative; touch-action: none; transition: box-shadow 0.2s; user-select: none; }
-    .sort-item::before { content: '⠿'; position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #CCC; font-size: 1.2rem; }
-    .sortable-fallback { opacity: 1 !important; background: #FFF; border: 2px solid var(--accent); box-shadow: 0 10px 20px rgba(0,0,0,0.1); cursor: grabbing; }
+    /* =========================================
+       6. 드래그 앤 드롭 (Sortable)
+       ========================================= */
+    #sortable-list { list-style: none; padding: 0; margin: 0; }
+    .sort-item {
+      background: white;
+      border: 1px solid #E0E0E0;
+      padding: 16px 16px 16px 44px;
+      margin-bottom: 10px;
+      border-radius: 12px;
+      position: relative;
+      
+      /* 모바일 최적화 */
+      touch-action: none; 
+      user-select: none;
+      word-break: keep-all;
+    }
+    .sort-item::before {
+      content: '⠿';
+      position: absolute; left: 14px; top: 50%;
+      transform: translateY(-50%);
+      color: #CCC; font-size: 1.2rem;
+    }
+    .sortable-fallback {
+      opacity: 1 !important; background: #FFF;
+      border: 2px solid var(--accent);
+      box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+      cursor: grabbing;
+    }
 
+    /* 로딩 화면 */
     #loading-screen { text-align: center; padding: 80px 0; color: #888; }
-    .main-spinner { width: 40px; height: 40px; border: 4px solid #EEE; border-top-color: var(--accent); border-radius: 50%; margin: 0 auto 16px; animation: spin 1s linear infinite; }
+    .main-spinner {
+      width: 40px; height: 40px;
+      border: 4px solid #EEE; border-top-color: var(--accent);
+      border-radius: 50%; margin: 0 auto 16px;
+      animation: spin 1s linear infinite;
+    }
+
   </style>
 </head>
 <body>
@@ -81,16 +275,19 @@
 <div class="container">
   <header>
     <h1>🌱 오늘의 문해력</h1>
-    <div style="color: #666; font-size: 0.9rem;">하루 한 편, 생각의 키가 자라요</div>
+    <div class="sub-title">하루 한 편, 생각의 키가 자라요</div>
   </header>
 
+  <!-- 로딩 화면 -->
   <div id="loading-screen">
     <div class="main-spinner"></div>
     <p>오늘의 이야기를 가져오는 중... 🚲</p>
   </div>
 
+  <!-- 메인 앱 (숨김 상태) -->
   <div id="app" style="display:none;">
-    <!-- 본문 카드 -->
+    
+    <!-- 1. 본문 카드 -->
     <div class="card">
       <span id="category" class="category-badge">카테고리</span>
       <h2 id="title">제목</h2>
@@ -106,53 +303,61 @@
       <div id="content" class="content-body"></div>
     </div>
 
-    <!-- 퀴즈 1 -->
+    <!-- 2. 객관식 퀴즈 -->
     <div class="card">
-      <h3 style="color:var(--accent); margin-top:0;">첫 번째 미션</h3>
-      <p id="q1-text" style="font-weight:600; margin-bottom:20px;"></p>
-      <div id="q1-options"></div>
+      <div class="quiz-title">첫 번째 미션</div>
+      <div id="q1-text" class="question-text"></div>
+      <div id="q1-options"></div> <!-- 옵션 버튼 들어갈 곳 -->
       <button class="check-btn" onclick="checkQ1()">정답 확인하기</button>
       <div id="q1-result" class="result-box"></div>
     </div>
 
-    <!-- 퀴즈 2 -->
+    <!-- 3. 순서 맞추기 -->
     <div class="card">
-      <h3 style="color:var(--accent); margin-top:0;">두 번째 미션</h3>
-      <p style="margin-bottom:10px;">글의 흐름에 맞게 순서를 정리해보세요.</p>
+      <div class="quiz-title">두 번째 미션</div>
+      <p style="margin:0 0 16px 0; font-size:0.95rem;">글의 흐름에 맞게 순서를 정리해보세요.</p>
       <ul id="sortable-list"></ul>
       <button class="check-btn" onclick="checkQ2()">순서 확인하기</button>
       <div id="q2-result" class="result-box"></div>
     </div>
+
   </div>
 </div>
 
-<!-- 단어 뜻 팝업 -->
+<!-- 단어 뜻 토스트 팝업 -->
 <div id="vocab-toast">단어 뜻</div>
 
 <script>
-  // 👇 여기에 배포된 웹앱 URL을 꼭 넣어주세요!
+  // ============================================================
+  // 👇 [설정] 배포된 웹앱 URL을 여기에 붙여넣으세요!
+  // ============================================================
   const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzr2RZqmVQqRi3Ms-zU1goBn71YCVUOyyAiNHCbpo-6RAG2RlPEOB7pKSDvgIMDTpyIrw/exec";
 
+  // 상태 변수
   let serverData = {};
   let q1UserChoice = null;
   let isPlaying = false;
   let audioBlobUrl = null;
   let toastTimer;
 
+  // 1. 초기 로딩
   window.onload = function() {
     fetch(GAS_WEB_APP_URL)
       .then(res => res.json())
       .then(data => initApp(data))
       .catch(err => {
-        document.getElementById('loading-screen').innerHTML = "<p>오류가 발생했습니다.<br>새로고침 해주세요.</p>";
+        document.getElementById('loading-screen').innerHTML = "<p>데이터를 불러오지 못했습니다.<br>새로고침 해주세요.</p>";
         console.error(err);
       });
   };
 
+  // 2. 앱 초기화 및 렌더링
   function initApp(data) {
     document.getElementById('loading-screen').style.display = 'none';
+    
+    // 데이터 없음 처리
     if (!data || data.status !== 'success') {
-      document.getElementById('app').innerHTML = `<div class='card' style='text-align:center;'><h3>💤 ${data.message || '오늘의 글이 없어요'}</h3></div>`;
+      document.getElementById('app').innerHTML = `<div class='card' style='text-align:center; padding:40px;'><h3>💤 ${data.message || '오늘의 글이 없어요'}</h3><p>조금 있다 다시 와주세요!</p></div>`;
       document.getElementById('app').style.display = 'block';
       return;
     }
@@ -160,24 +365,25 @@
     serverData = data;
     document.getElementById('app').style.display = 'block';
 
-    // 1. 텍스트 렌더링 (단어 뜻 기능 적용)
+    // A. 본문 렌더링 (단어 파싱 포함)
     document.getElementById('category').innerText = data.category;
     document.getElementById('title').innerHTML = safeParse(data.title);
     document.getElementById('content').innerHTML = safeParse(data.content);
 
-    // 2. 오디오 버튼 설정
+    // B. 오디오 버튼 처리
     const audioBtn = document.getElementById('audio-btn');
     if (!data.audioFileId) {
-      audioBtn.style.display = 'none';
+      audioBtn.style.display = 'none'; // 오디오 없으면 숨김
     }
 
-    // 3. Q1 렌더링
+    // C. Q1 (객관식) 렌더링 - ⭐ [수정됨] 레이아웃 깨짐 방지 구조 적용
     document.getElementById('q1-text').innerHTML = safeParse(data.q1.question);
     const q1Container = document.getElementById('q1-options');
     data.q1.options.forEach((opt, idx) => {
       const btn = document.createElement('div');
       btn.className = 'choice-btn';
-      btn.innerHTML = `<span>${idx+1}.</span> ${safeParse(opt)}`;
+      // 번호(num)와 텍스트를 분리하여 Flexbox 적용
+      btn.innerHTML = `<span class="num">${idx+1}.</span> <span>${safeParse(opt)}</span>`;
       btn.onclick = () => {
         q1UserChoice = idx + 1;
         document.querySelectorAll('#q1-options .choice-btn').forEach(b => b.classList.remove('selected'));
@@ -186,9 +392,10 @@
       q1Container.appendChild(btn);
     });
 
-    // 4. Q2 렌더링 (셔플)
+    // D. Q2 (순서 정렬) 렌더링
     const list = document.getElementById('sortable-list');
     let items = data.q2.items.map((txt, i) => ({ text: txt, originalIdx: i }));
+    // 셔플
     for (let i = items.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [items[i], items[j]] = [items[j], items[i]];
@@ -201,6 +408,7 @@
       list.appendChild(li);
     });
 
+    // SortableJS 적용
     new Sortable(list, {
       animation: 150, delay: 50, delayOnTouchOnly: true, 
       touchStartThreshold: 3, fallbackTolerance: 3,
@@ -208,34 +416,30 @@
     });
   }
 
-  // ==========================================
-  // 🧹 텍스트 파싱 & 단어 뜻 기능 (핵심)
-  // ==========================================
+  // ============================================================
+  // 🛠 유틸리티: 텍스트 파싱 (HTML, 단어 뜻, 볼드)
+  // ============================================================
   function safeParse(text) {
     if (!text) return "";
     let t = String(text);
 
-    // 특수문자 복원
+    // 1. 특수문자 복원
     t = t.replace(/&#42;/g, '*').replace(/&ast;/g, '*');
     
-    // ⭐ [단어](뜻) 파싱 -> 클릭 가능한 span 생성
-    // 정규식: 대괄호 안의 문자, 소괄호 안의 문자 추출
+    // 2. 단어 뜻 파싱: [단어](뜻) -> 클릭 가능한 span
     t = t.replace(/\[([^\]]+)\]\(([^)]+)\)/g, function(match, word, mean) {
       return `<span class="vocab" onclick="showMean('${mean}')">${word}</span>`;
     });
 
-    // **볼드** -> strong
+    // 3. 마크다운 볼드: **텍스트** -> strong
     t = t.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
     
-    // 줄바꿈
+    // 4. 줄바꿈
     t = t.replace(/\n/g, '<br>');
     return t;
   }
 
-  // ==========================================
-  // 💬 단어 뜻 팝업 보이기 (Toast)
-  // ==========================================
-  // window 객체에 등록하여 onclick에서 확실히 찾을 수 있게 함
+  // 단어 뜻 보여주기 (Toast)
   window.showMean = function(meaning) {
     const toast = document.getElementById("vocab-toast");
     toast.innerText = meaning;
@@ -247,14 +451,14 @@
     }, 3000);
   }
 
-  // ==========================================
-  // 🔊 오디오 스트리밍 (다운로드 방지)
-  // ==========================================
+  // ============================================================
+  // 🔊 오디오 스트리밍 (다운로드 팝업 방지)
+  // ============================================================
   async function toggleAudio() {
     const btn = document.getElementById('audio-btn');
     const player = document.getElementById('audio-player');
 
-    // 1. 재생 중이면 멈춤
+    // 1. 멈추기
     if (isPlaying) {
       player.pause();
       isPlaying = false;
@@ -262,7 +466,7 @@
       return;
     }
 
-    // 2. 이미 데이터 받아둔게 있으면 재생
+    // 2. 이미 로딩된 데이터 재생
     if (audioBlobUrl) {
       player.play();
       isPlaying = true;
@@ -270,13 +474,13 @@
       return;
     }
 
-    // 3. 서버에서 데이터 가져오기 (스트리밍)
+    // 3. 서버에서 가져오기
     try {
-      btn.innerHTML = `<div class="spinner"></div> 로딩 중...`;
+      btn.innerHTML = `<div class="spinner"></div> 로딩 중...`; // 로딩 표시
       
       const res = await fetch(`${GAS_WEB_APP_URL}?type=audio&id=${serverData.audioFileId}`);
       const json = await res.json();
-      
+
       if (json.status !== 'success') throw new Error(json.message);
 
       // Base64 -> Blob 변환
@@ -287,23 +491,21 @@
       }
       const byteArray = new Uint8Array(byteNumbers);
       const blob = new Blob([byteArray], { type: 'audio/mp3' });
-      
-      // 임시 URL 생성
+
       audioBlobUrl = URL.createObjectURL(blob);
       player.src = audioBlobUrl;
-      
+
       player.play();
       isPlaying = true;
-      
-      // 재생 끝나면 버튼 복구
+
+      // 재생 끝나면 복구
       player.onended = () => { isPlaying = false; updateAudioBtn(); };
-      
       updateAudioBtn();
 
     } catch (e) {
       console.error(e);
-      alert("오디오를 불러오지 못했습니다.");
-      updateAudioBtn();
+      alert("오디오를 재생할 수 없습니다.");
+      updateAudioBtn(); // 버튼 원상복구
     }
   }
 
@@ -318,19 +520,24 @@
     }
   }
 
-  // ==========================================
-  // ✅ 퀴즈 정답 확인
-  // ==========================================
+  // ============================================================
+  // ✅ 퀴즈 정답 로직
+  // ============================================================
   window.checkQ1 = function() {
     const res = document.getElementById('q1-result');
     res.style.display = 'block';
-    if (!q1UserChoice) { res.className='result-box wrong'; res.innerText = '보기를 선택해주세요!'; return; }
+    if (!q1UserChoice) { 
+      res.className='result-box wrong'; 
+      res.innerText = '보기를 선택해주세요!'; 
+      return; 
+    }
     
     if (q1UserChoice == serverData.q1.answer) {
       res.className = 'result-box correct';
       res.innerHTML = `👏 정답입니다!<br><br><span style="font-weight:normal; font-size:0.9rem;">${safeParse(serverData.q1.explanation)}</span>`;
     } else {
-      res.className = 'result-box wrong'; res.innerText = '다시 한 번 생각해보세요!';
+      res.className = 'result-box wrong'; 
+      res.innerText = '다시 한 번 생각해보세요!';
     }
   }
 
@@ -342,9 +549,11 @@
     const res = document.getElementById('q2-result');
     res.style.display = 'block';
     if (correct) {
-      res.className = 'result-box correct'; res.innerText = '완벽합니다! 흐름을 정확히 파악했네요! 🎉';
+      res.className = 'result-box correct'; 
+      res.innerText = '완벽합니다! 흐름을 정확히 파악했네요! 🎉';
     } else {
-      res.className = 'result-box wrong'; res.innerText = '순서가 조금 다른 것 같아요. 다시 옮겨볼까요?';
+      res.className = 'result-box wrong'; 
+      res.innerText = '순서가 조금 다른 것 같아요. 다시 옮겨볼까요?';
     }
   }
 </script>
